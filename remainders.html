@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edu Alert - Semester Schedule</title>
+    <title>Multi-Year Semester Schedule</title>
     <style>
         /* Basic Reset */
         * {
@@ -154,13 +155,22 @@
             background-color: #2980b9;
         }
 
-        .btn-refresh {
+        .btn-secondary {
             background-color: #95a5a6;
             color: white;
         }
 
-        .btn-refresh:hover {
+        .btn-secondary:hover {
             background-color: #7f8c8d;
+        }
+
+        .btn-refresh {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .btn-refresh:hover {
+            background-color: #c0392b;
         }
 
         .meetings-container {
@@ -168,7 +178,22 @@
             padding: 2rem;
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            display: none; /* Initially hidden */
+            margin-bottom: 2rem;
+        }
+
+        .filter-container {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1rem;
         }
 
         .status-legend {
@@ -252,6 +277,12 @@
             color: white;
         }
 
+        .meeting-year {
+            font-size: 0.75rem;
+            color: #7f8c8d;
+            margin-left: 0.5rem;
+        }
+
         .last-updated {
             margin-top: 2rem;
             font-size: 0.9rem;
@@ -268,15 +299,48 @@
             border-top: 1px solid #eee;
         }
 
+        .year-tabs {
+            display: flex;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .year-tab {
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-bottom: none;
+            border-radius: 4px 4px 0 0;
+            margin-right: 0.5rem;
+            background-color: #f8f9fa;
+        }
+
+        .year-tab.active {
+            background-color: white;
+            border-color: #ddd;
+            border-bottom: 1px solid white;
+            margin-bottom: -1px;
+            font-weight: 500;
+            color: #3498db;
+        }
+
+        .year-content {
+            display: none;
+        }
+
+        .year-content.active {
+            display: block;
+        }
+
         /* Print specific styles */
         @media print {
             body * {
                 visibility: hidden;
             }
-            #meetingsContainer, #meetingsContainer * {
+            #scheduleContainer, #scheduleContainer * {
                 visibility: visible;
             }
-            #meetingsContainer {
+            #scheduleContainer {
                 position: absolute;
                 left: 0;
                 top: 0;
@@ -285,7 +349,7 @@
                 box-shadow: none;
                 background-color: white;
             }
-            .button-group, .status-legend, .last-updated {
+            .button-group, .status-legend, .last-updated, .filter-container, .year-tabs {
                 display: none;
             }
             .meeting-grid {
@@ -302,6 +366,9 @@
             }
             header, .schedule-form, .footer {
                 display: none;
+            }
+            .year-content {
+                display: block !important;
             }
         }
     </style>
@@ -320,419 +387,186 @@
     </header>
 
     <div class="content-container">
-        <h1><i class="fas fa-calendar-alt"></i> Semester Schedule</h1>
+        <h1><i class="fas fa-calendar-alt"></i> Multi-Year Semester Schedule</h1>
         
-        <div class="schedule-form" id="scheduleForm">
-            <div class="form-grid">
-                <div class="form-group">
-                    <label for="semester_type"><i class="fas fa-graduation-cap"></i> Semester:</label>
-                    <select id="semester_type">
-                        <option value="1">Semester 1</option>
-                        <option value="2">Semester 2</option>
-                    </select>
+        <!-- Year Selection Tabs -->
+        <div class="year-tabs" id="yearTabs">
+            <div class="year-tab active" data-year="1">Year 1</div>
+            <div class="year-tab" data-year="2">Year 2</div>
+            <div class="year-tab" data-year="3">Year 3</div>
+            <div class="year-tab" data-year="4">Year 4</div>
+        </div>
+        
+        <!-- Year 1 Form -->
+        <div class="year-content active" id="year1Form">
+            <div class="schedule-form">
+                <h2><i class="fas fa-calendar-plus"></i> Year 1 Schedule</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="year1_semester_type"><i class="fas fa-graduation-cap"></i> Semester:</label>
+                        <select id="year1_semester_type">
+                            <option value="1">Semester 1</option>
+                            <option value="2">Semester 2</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="year1_bos_last_meeting"><i class="fas fa-users"></i> Last BOS Meeting:</label>
+                        <input type="date" id="year1_bos_last_meeting" class="clearable-date">
+                        <div class="error-message" id="year1_bos_last_meeting_error"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="year1_sem_start"><i class="fas fa-calendar-day"></i> Semester Start:</label>
+                        <input type="date" id="year1_sem_start" class="clearable-date">
+                        <div class="error-message" id="year1_sem_start_error"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="year1_sem_end"><i class="fas fa-calendar-day"></i> Semester End:</label>
+                        <input type="date" id="year1_sem_end" class="clearable-date">
+                        <div class="error-message" id="year1_sem_end_error"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="year1_exam_start"><i class="fas fa-edit"></i> Exam Start:</label>
+                        <input type="date" id="year1_exam_start" class="clearable-date">
+                        <div class="error-message" id="year1_exam_start_error"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="year1_exam_end"><i class="fas fa-edit"></i> Exam End:</label>
+                        <input type="date" id="year1_exam_end" class="clearable-date">
+                        <div class="error-message" id="year1_exam_end_error"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="year1_mid1_start"><i class="fas fa-calendar-check"></i> Mid 1 Start:</label>
+                        <input type="date" id="year1_mid1_start" class="clearable-date">
+                        <div class="error-message" id="year1_mid1_start_error"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="year1_mid1_end"><i class="fas fa-calendar-check"></i> Mid 1 End:</label>
+                        <input type="date" id="year1_mid1_end" class="clearable-date">
+                        <div class="error-message" id="year1_mid1_end_error"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="year1_mid2_start"><i class="fas fa-calendar-check"></i> Mid 2 Start:</label>
+                        <input type="date" id="year1_mid2_start" class="clearable-date">
+                        <div class="error-message" id="year1_mid2_start_error"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="year1_mid2_end"><i class="fas fa-calendar-check"></i> Mid 2 End:</label>
+                        <input type="date" id="year1_mid2_end" class="clearable-date">
+                        <div class="error-message" id="year1_mid2_end_error"></div>
+                    </div>
                 </div>
                 
-                <div class="form-group">
-                    <label for="bos_last_meeting"><i class="fas fa-users"></i> Last BOS Meeting:</label>
-                    <input type="date" id="bos_last_meeting" class="clearable-date">
-                    <div class="error-message" id="bos_last_meeting_error"></div>
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="scheduleMeetings(1)">
+                        <i class="fas fa-calendar-plus"></i> Generate Schedule
+                    </button>
+                    <button class="btn btn-refresh" onclick="clearYearDates(1)">
+                        <i class="fas fa-sync-alt"></i> Clear Dates
+                    </button>
                 </div>
-                
-                <div class="form-group">
-                    <label for="sem_start"><i class="fas fa-calendar-day"></i> Semester Start:</label>
-                    <input type="date" id="sem_start" class="clearable-date">
-                    <div class="error-message" id="sem_start_error"></div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="sem_end"><i class="fas fa-calendar-day"></i> Semester End:</label>
-                    <input type="date" id="sem_end" class="clearable-date">
-                    <div class="error-message" id="sem_end_error"></div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="exam_start"><i class="fas fa-edit"></i> Exam Start:</label>
-                    <input type="date" id="exam_start" class="clearable-date">
-                    <div class="error-message" id="exam_start_error"></div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="exam_end"><i class="fas fa-edit"></i> Exam End:</label>
-                    <input type="date" id="exam_end" class="clearable-date">
-                    <div class="error-message" id="exam_end_error"></div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="mid1_start"><i class="fas fa-calendar-check"></i> Mid 1 Start:</label>
-                    <input type="date" id="mid1_start" class="clearable-date">
-                    <div class="error-message" id="mid1_start_error"></div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="mid1_end"><i class="fas fa-calendar-check"></i> Mid 1 End:</label>
-                    <input type="date" id="mid1_end" class="clearable-date">
-                    <div class="error-message" id="mid1_end_error"></div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="mid2_start"><i class="fas fa-calendar-check"></i> Mid 2 Start:</label>
-                    <input type="date" id="mid2_start" class="clearable-date">
-                    <div class="error-message" id="mid2_start_error"></div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="mid2_end"><i class="fas fa-calendar-check"></i> Mid 2 End:</label>
-                    <input type="date" id="mid2_end" class="clearable-date">
-                    <div class="error-message" id="mid2_end_error"></div>
-                </div>
-            </div>
-            
-            <div class="button-group">
-                <button class="btn btn-primary" onclick="validateAndSchedule()">
-                    <i class="fas fa-calendar-plus"></i> Generate Schedule
-                </button>
-                <button class="btn btn-refresh" onclick="clearAllDates()">
-                    <i class="fas fa-sync-alt"></i> Clear All Dates
-                </button>
             </div>
         </div>
         
-        <div class="meetings-container" id="meetingsContainer">
-            <h2><i class="fas fa-clock"></i> Scheduled Meetings</h2>
-            
-            <div class="status-legend">
-                <span class="legend-item"><span class="legend-color past"></span> Past Meeting</span>
-                <span class="legend-item"><span class="legend-color today"></span> Today's Meeting</span>
-                <span class="legend-item"><span class="legend-color future"></span> Upcoming Meeting</span>
+        <!-- Year 2 Form -->
+        <div class="year-content" id="year2Form">
+            <div class="schedule-form">
+                <h2><i class="fas fa-calendar-plus"></i> Year 2 Schedule</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="year2_semester_type"><i class="fas fa-graduation-cap"></i> Semester:</label>
+                        <select id="year2_semester_type">
+                            <option value="1">Semester 1</option>
+                            <option value="2">Semester 2</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="year2_bos_last_meeting"><i class="fas fa-users"></i> Last BOS Meeting:</label>
+                        <input type="date" id="year2_bos_last_meeting" class="clearable-date">
+                        <div class="error-message" id="year2_bos_last_meeting_error"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="year2_sem_start"><i class="fas fa-calendar-day"></i> Semester Start:</label>
+                        <input type="date" id="year2_sem_start" class="clearable-date">
+                        <div class="error-message" id="year2_sem_start_error"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="year2_sem_end"><i class="fas fa-calendar-day"></i> Semester End:</label>
+                        <input type="date" id="year2_sem_end" class="clearable-date">
+                        <div class="error-message" id="year2_sem_end_error"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="year2_exam_start"><i class="fas fa-edit"></i> Exam Start:</label>
+                        <input type="date" id="year2_exam_start" class="clearable-date">
+                        <div class="error-message" id="year2_exam_start_error"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="year2_exam_end"><i class="fas fa-edit"></i> Exam End:</label>
+                        <input type="date" id="year2_exam_end" class="clearable-date">
+                        <div class="error-message" id="year2_exam_end_error"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="year2_mid1_start"><i class="fas fa-calendar-check"></i> Mid 1 Start:</label>
+                        <input type="date" id="year2_mid1_start" class="clearable-date">
+                        <div class="error-message" id="year2_mid1_start_error"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="year2_mid1_end"><i class="fas fa-calendar-check"></i> Mid 1 End:</label>
+                        <input type="date" id="year2_mid1_end" class="clearable-date">
+                        <div class="error-message" id="year2_mid1_end_error"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="year2_mid2_start"><i class="fas fa-calendar-check"></i> Mid 2 Start:</label>
+                        <input type="date" id="year2_mid2_start" class="clearable-date">
+                        <div class="error-message" id="year2_mid2_start_error"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="year2_mid2_end"><i class="fas fa-calendar-check"></i> Mid 2 End:</label>
+                        <input type="date" id="year2_mid2_end" class="clearable-date">
+                        <div class="error-message" id="year2_mid2_end_error"></div>
+                    </div>
+                </div>
+                
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="scheduleMeetings(2)">
+                        <i class="fas fa-calendar-plus"></i> Generate Schedule
+                    </button>
+                    <button class="btn btn-refresh" onclick="clearYearDates(2)">
+                        <i class="fas fa-sync-alt"></i> Clear Dates
+                    </button>
+                </div>
             </div>
-            
-            <div class="meeting-grid">
-                <div class="meeting-card">
-                    <h3><i class="fas fa-user-friends"></i> CRC Meetings</h3>
-                    <ul class="meeting-list" id="crcMeetings"></ul>
-                </div>
-                
-                <div class="meeting-card">
-                    <h3><i class="fas fa-users"></i> DDC Meetings</h3>
-                    <ul class="meeting-list" id="ddcMeetings"></ul>
-                </div>
-                
-                <div class="meeting-card">
-                    <h3><i class="fas fa-chalkboard-teacher"></i> PAQIC Meetings</h3>
-                    <ul class="meeting-list" id="paqicMeetings"></ul>
-                </div>
-                
-                <div class="meeting-card">
-                    <h3><i class="fas fa-user-tie"></i> BOS Meetings</h3>
-                    <ul class="meeting-list" id="bosMeetings"></ul>
-                </div>
-            </div>
-            
-            <div class="last-updated" id="lastUpdated"></div>
-            
-            <button class="btn btn-primary" id="printButton" onclick="window.print()">
-                <i class="fas fa-print"></i> Print Schedule
-            </button>
         </div>
         
-        <div class="footer">
-            <p>&copy; 2025 Edu Alert - Semester Schedule. All Rights Reserved.</p>
-        </div>
-    </div>
-
-    <script>
-        function validateAndSchedule() {
-            // Clear previous errors
-            document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
-            
-            // Get all input values
-            const semesterType = document.getElementById('semester_type').value;
-            const bosLastMeeting = document.getElementById('bos_last_meeting').value;
-            const semStart = document.getElementById('sem_start').value;
-            const semEnd = document.getElementById('sem_end').value;
-            const examStart = document.getElementById('exam_start').value;
-            const examEnd = document.getElementById('exam_end').value;
-            const mid1Start = document.getElementById('mid1_start').value;
-            const mid1End = document.getElementById('mid1_end').value;
-            const mid2Start = document.getElementById('mid2_start').value;
-            const mid2End = document.getElementById('mid2_end').value;
-            
-            // Validate required fields
-            let isValid = true;
-            
-            if (!bosLastMeeting) {
-                document.getElementById('bos_last_meeting_error').textContent = 'Last BOS meeting date is required';
-                isValid = false;
-            }
-            
-            if (!semStart) {
-                document.getElementById('sem_start_error').textContent = 'Semester start date is required';
-                isValid = false;
-            }
-            
-            if (!semEnd) {
-                document.getElementById('sem_end_error').textContent = 'Semester end date is required';
-                isValid = false;
-            }
-            
-            if (!examStart) {
-                document.getElementById('exam_start_error').textContent = 'Exam start date is required';
-                isValid = false;
-            }
-            
-            if (!examEnd) {
-                document.getElementById('exam_end_error').textContent = 'Exam end date is required';
-                isValid = false;
-            }
-            
-            // Validate date order
-            if (semStart && semEnd && new Date(semStart) > new Date(semEnd)) {
-                document.getElementById('sem_end_error').textContent = 'Semester end must be after start';
-                isValid = false;
-            }
-            
-            if (examStart && examEnd && new Date(examStart) > new Date(examEnd)) {
-                document.getElementById('exam_end_error').textContent = 'Exam end must be after start';
-                isValid = false;
-            }
-            
-            if (mid1Start && mid1End && new Date(mid1Start) > new Date(mid1End)) {
-                document.getElementById('mid1_end_error').textContent = 'Mid 1 end must be after start';
-                isValid = false;
-            }
-            
-            if (mid2Start && mid2End && new Date(mid2Start) > new Date(mid2End)) {
-                document.getElementById('mid2_end_error').textContent = 'Mid 2 end must be after start';
-                isValid = false;
-            }
-            
-            if (!isValid) return;
-            
-            // If validation passes, generate the schedule
-            generateSchedule(
-                semesterType,
-                bosLastMeeting,
-                semStart,
-                semEnd,
-                examStart,
-                examEnd,
-                mid1Start,
-                mid1End,
-                mid2Start,
-                mid2End
-            );
-            
-            // Show the meetings container
-            document.getElementById('meetingsContainer').style.display = 'block';
-        }
-        
-        function generateSchedule(
-            semesterType,
-            bosLastMeeting,
-            semStart,
-            semEnd,
-            examStart,
-            examEnd,
-            mid1Start,
-            mid1End,
-            mid2Start,
-            mid2End
-        ) {
-            // Clear previous meetings
-            document.getElementById('crcMeetings').innerHTML = '';
-            document.getElementById('ddcMeetings').innerHTML = '';
-            document.getElementById('paqicMeetings').innerHTML = '';
-            document.getElementById('bosMeetings').innerHTML = '';
-            
-            // Convert dates to Date objects
-            const semStartDate = new Date(semStart);
-            const semEndDate = new Date(semEnd);
-            const examStartDate = new Date(examStart);
-            const examEndDate = new Date(examEnd);
-            const mid1StartDate = mid1Start ? new Date(mid1Start) : null;
-            const mid1EndDate = mid1End ? new Date(mid1End) : null;
-            const mid2StartDate = mid2Start ? new Date(mid2Start) : null;
-            const mid2EndDate = mid2End ? new Date(mid2End) : null;
-            const lastBosDate = new Date(bosLastMeeting);
-            
-            // Generate CRC meetings (every 15 days, not during exams)
-            generateCRCmeetings(semStartDate, semEndDate, examStartDate, examEndDate);
-            
-            // Generate DDC meetings (every 30 days after semester start)
-            generateDDCmeetings(semStartDate, semEndDate);
-            
-            // Generate PAQIC meetings (every 45 days after semester start)
-            generatePAQICmeetings(semStartDate, semEndDate);
-            
-            // Generate BOS meetings (every 60 days after last BOS meeting)
-            generateBOSmeetings(lastBosDate, semEndDate);
-            
-            // Set last updated time
-            const now = new Date();
-            document.getElementById('lastUpdated').textContent = `Last updated: ${now.toLocaleString()}`;
-        }
-        
-        function generateCRCmeetings(semStartDate, semEndDate, examStartDate, examEndDate) {
-            const crcMeetingsList = document.getElementById('crcMeetings');
-            
-            // Start from semester start date
-            let currentDate = new Date(semStartDate);
-            currentDate.setDate(currentDate.getDate() + 14); // First meeting is 14 days after start
-            
-            while (currentDate <= semEndDate) {
-                // Skip if during exams
-                if (currentDate >= examStartDate && currentDate <= examEndDate) {
-                    currentDate.setDate(currentDate.getDate() + 15);
-                    continue;
-                }
-                
-                // Skip if it's a weekend (Saturday or Sunday)
-                if (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
-                    currentDate.setDate(currentDate.getDate() + 1);
-                    continue;
-                }
-                
-                const formattedDate = formatDate(currentDate);
-                const status = getDateStatus(currentDate);
-                
-                // Add to display list
-                const li = document.createElement('li');
-                li.innerHTML = `
-                    <span class="meeting-date">${formattedDate}</span>
-                    <span class="meeting-status" style="background-color: ${status.color}">${status.text}</span>
-                `;
-                crcMeetingsList.appendChild(li);
-                
-                // Move to next meeting date (15 days after current)
-                currentDate.setDate(currentDate.getDate() + 15);
-            }
-        }
-        
-        function generateDDCmeetings(semStartDate, semEndDate) {
-            const ddcMeetingsList = document.getElementById('ddcMeetings');
-            
-            // Start from semester start date + 29 days (first meeting is 30 days after start)
-            let currentDate = new Date(semStartDate);
-            currentDate.setDate(currentDate.getDate() + 29);
-            
-            while (currentDate <= semEndDate) {
-                // Skip if it's a weekend (Saturday or Sunday)
-                if (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
-                    currentDate.setDate(currentDate.getDate() + 1);
-                    continue;
-                }
-                
-                const formattedDate = formatDate(currentDate);
-                const status = getDateStatus(currentDate);
-                
-                // Add to display list
-                const li = document.createElement('li');
-                li.innerHTML = `
-                    <span class="meeting-date">${formattedDate}</span>
-                    <span class="meeting-status" style="background-color: ${status.color}">${status.text}</span>
-                `;
-                ddcMeetingsList.appendChild(li);
-                
-                // Move to next meeting date (30 days after current)
-                currentDate.setDate(currentDate.getDate() + 30);
-            }
-        }
-        
-        function generatePAQICmeetings(semStartDate, semEndDate) {
-            const paqicMeetingsList = document.getElementById('paqicMeetings');
-            
-            // Start from semester start date + 44 days (first meeting is 45 days after start)
-            let currentDate = new Date(semStartDate);
-            currentDate.setDate(currentDate.getDate() + 44);
-            
-            while (currentDate <= semEndDate) {
-                // Skip if it's a weekend (Saturday or Sunday)
-                if (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
-                    currentDate.setDate(currentDate.getDate() + 1);
-                    continue;
-                }
-                
-                const formattedDate = formatDate(currentDate);
-                const status = getDateStatus(currentDate);
-                
-                // Add to display list
-                const li = document.createElement('li');
-                li.innerHTML = `
-                    <span class="meeting-date">${formattedDate}</span>
-                    <span class="meeting-status" style="background-color: ${status.color}">${status.text}</span>
-                `;
-                paqicMeetingsList.appendChild(li);
-                
-                // Move to next meeting date (45 days after current)
-                currentDate.setDate(currentDate.getDate() + 45);
-            }
-        }
-        
-        function generateBOSmeetings(lastBosDate, semEndDate) {
-            const bosMeetingsList = document.getElementById('bosMeetings');
-            
-            // Start from last BOS meeting date + 59 days (next meeting is 60 days after last)
-            let currentDate = new Date(lastBosDate);
-            currentDate.setDate(currentDate.getDate() + 59);
-            
-            while (currentDate <= semEndDate) {
-                // Skip if it's a weekend (Saturday or Sunday)
-                if (currentDate.getDay() === 0 || currentDate.getDay() === 6) {
-                    currentDate.setDate(currentDate.getDate() + 1);
-                    continue;
-                }
-                
-                const formattedDate = formatDate(currentDate);
-                const status = getDateStatus(currentDate);
-                
-                // Add to display list
-                const li = document.createElement('li');
-                li.innerHTML = `
-                    <span class="meeting-date">${formattedDate}</span>
-                    <span class="meeting-status" style="background-color: ${status.color}">${status.text}</span>
-                `;
-                bosMeetingsList.appendChild(li);
-                
-                // Move to next meeting date (60 days after current)
-                currentDate.setDate(currentDate.getDate() + 60);
-            }
-        }
-        
-        function formatDate(date) {
-            const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
-            return date.toLocaleDateString('en-US', options);
-        }
-        
-        function getDateStatus(date) {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            
-            const compareDate = new Date(date);
-            compareDate.setHours(0, 0, 0, 0);
-            
-            if (compareDate.getTime() === today.getTime()) {
-                return { text: 'Today', color: '#f39c12' };
-            } else if (compareDate < today) {
-                return { text: 'Past', color: '#e74c3c' };
-            } else {
-                return { text: 'Upcoming', color: '#2ecc71' };
-            }
-        }
-        
-        function clearAllDates() {
-            // Clear all date inputs
-            document.querySelectorAll('.clearable-date').forEach(input => {
-                input.value = '';
-            });
-            
-            // Clear all error messages
-            document.querySelectorAll('.error-message').forEach(el => {
-                el.textContent = '';
-            });
-            
-            // Hide meetings container
-            document.getElementById('meetingsContainer').style.display = 'none';
-        }
-    </script>
-</body>
-</html>
+        <!-- Year 3 Form -->
+        <div class="year-content" id="year3Form">
+            <div class="schedule-form">
+                <h2><i class="fas fa-calendar-plus"></i> Year 3 Schedule</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="year3_semester_type"><i class="fas fa-graduation-cap"></i> Semester:</label>
+                        <select id="year3_semester_type">
+                            <option value="1">Semester 1</option>
+                            <option value="2">Semester 2</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="year3_bos_last_meeting"><i class
